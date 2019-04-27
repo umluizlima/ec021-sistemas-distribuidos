@@ -1,4 +1,12 @@
-var restify = require("restify");
+var restify = require('restify');
+var mysql = require('mysql');
+
+var con = {
+  host: 'localhost',
+  user: 'root',
+  password: 'root',
+  database: 'ec021',
+};
 
 var server = restify.createServer({
     name: "Activity 1"
@@ -7,11 +15,6 @@ var server = restify.createServer({
 server.use(restify.plugins.bodyParser());
 server.use(restify.plugins.queryParser());
 
-var toddyStore = [
-  { lote: 'ABC', conteudo: 150, validade: '28/05/2019'},
-  { lote: 'ABB', conteudo: 200, validade: '01/03/2019'}
-];
-
 // POST
 function insertToddy(req, res, next) {
   var data = {
@@ -19,24 +22,48 @@ function insertToddy(req, res, next) {
     conteudo: req.body.conteudo,
     validade: req.body.validade
   };
-  if(data && data != null) {
-    data.id = toddyStore.push(data);
-    res.send(201, data);
-  } else {
-    res.send(400);
-  }
+  var connection = mysql.createConnection(con);
+  connection.connect(function(err) {
+    if (err) throw err;
+    console.log('Connected');
+  })
+
+  const strQuery = `INSERT INTO toddy (lote, conteudo, validade)
+      VALUES ('${data.lote}', ${data.conteudo}, '${data.validade}');`;
+
+  connection.query(strQuery, function (err, rows, fields) {
+    if (err) {
+      res.json(400, err)
+    } else {
+      res.json(201, rows.insertId);
+    }
+  });
+
+  connection.end();
   next();
 }
 server.post("/toddy", insertToddy);
 
 // GET All
 function listToddy(req, res, next) {
-  var data = [];
-  for (const [index, item] of toddyStore.entries()) {
-    item.id = index+1;
-    data.push(item);
-  }
-  res.send(200, data);
+  console.log('[LISTAR]')
+  var connection = mysql.createConnection(con);
+  connection.connect(function(err) {
+    if (err) throw err;
+    console.log('Connected');
+  })
+
+  const strQuery = `SELECT * FROM toddy;`;
+
+  connection.query(strQuery, function (err, rows, fields) {
+    if (err) {
+      res.json(err)
+    } else {
+      res.json(rows);
+    }
+  });
+
+  connection.end();
   next();
 }
 server.get("/toddy", listToddy);
@@ -44,32 +71,83 @@ server.get("/toddy", listToddy);
 // GET One
 function getToddy(req, res, next) {
   index = req.params.id;
-  data = toddyStore[index-1];
-  if(!data) {
-    return res.send(404);
-  }
-  data.id = index;
-  res.send(200, data);
+  console.log('[SELECIONAR]')
+  var connection = mysql.createConnection(con);
+  connection.connect(function(err) {
+    if (err) throw err;
+    console.log('Connected');
+  })
 
+  const strQuery = `SELECT * FROM toddy WHERE id = ${index};`;
+
+  connection.query(strQuery, function (err, rows, fields) {
+    if (err) {
+      res.json(404, err)
+    } else {
+      res.json(200, rows);
+    }
+  });
+
+  connection.end();
   next();
 }
 server.get("/toddy/:id", getToddy);
 
+// GET Due
+function getDueToddy(req, res, next) {
+  console.log('[VENCIDOS]')
+  var connection = mysql.createConnection(con);
+  connection.connect(function(err) {
+    if (err) throw err;
+    console.log('Connected');
+  })
+
+  const strQuery = `SELECT * FROM toddy;`;
+
+  connection.query(strQuery, function (err, rows, fields) {
+    if (err) {
+      res.json(404, err)
+    } else {
+      res.json(200, rows.filter(toddy => new Date(toddy.validade) < new Date()));
+    }
+  });
+
+  connection.end();
+  next();
+}
+server.get("/toddy/due", getDueToddy);
+
 // UPDATE
 function updateToddy(req, res, next) {
-  index = req.params.id-1;
-  if(!toddyStore[index]) {
-    return res.send(404);
-  }
+  index = req.params.id;
   var data = {
-    id: index,
     lote: req.body.lote,
     conteudo: req.body.conteudo,
     validade: req.body.validade
   };
-  toddyStore[index] = data
-  return res.send(200, data);
+  console.log('[ATUALIZAR]')
+  var connection = mysql.createConnection(con);
+  connection.connect(function(err) {
+    if (err) throw err;
+    console.log('Connected');
+  })
 
+  const strQuery = `UPDATE toddy
+    SET (
+      lote = '${data.lote}',
+      conteudo = ${data.conteudo},
+      validade = '${data.validade}'
+    ) WHERE id = ${index};`;
+
+  connection.query(strQuery, function (err, rows, fields) {
+    if (err) {
+      res.json(404, err)
+    } else {
+      res.json(202, rows);
+    }
+  });
+
+  connection.end();
   next();
 }
 server.put("/toddy/:id", updateToddy);
@@ -77,12 +155,24 @@ server.put("/toddy/:id", updateToddy);
 // DELETE
 function deleteToddy(req, res, next) {
   index = req.params.id;
-  if(!toddyStore[index-1]) {
-    return res.send(404);
-  }
-  toddyStore = toddyStore.splice(req.params.id-1, 1);
-  return res.send(204);
+  console.log('[APAGAR]')
+  var connection = mysql.createConnection(con);
+  connection.connect(function(err) {
+    if (err) throw err;
+    console.log('Connected');
+  })
 
+  const strQuery = `DELETE FROM toddy WHERE id = ${index};`;
+
+  connection.query(strQuery, function (err, rows, fields) {
+    if (err) {
+      res.json(404, err)
+    } else {
+      res.json(204, rows);
+    }
+  });
+
+  connection.end();
   next();
 }
 server.del("/toddy/:id", deleteToddy);
