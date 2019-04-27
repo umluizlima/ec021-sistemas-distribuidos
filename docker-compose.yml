@@ -1,0 +1,29 @@
+version: '2'
+
+services:
+  db:
+    container_name: db-ec021
+    image: mysql:5.7
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ec021
+      MYSQL_USER: ec021
+      MYSQL_PASSWORD: ec021
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    volumes:
+    - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  api:
+    container_name: api-ec021
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      DB_USER: ec021
+      DB_PASSWORD: ec021
+    depends_on:
+      - db

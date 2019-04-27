@@ -2,7 +2,7 @@ var restify = require('restify');
 var mysql = require('mysql');
 
 var con = {
-  host: 'localhost',
+  host: 'db',
   user: 'root',
   password: 'root',
   database: 'ec021',
