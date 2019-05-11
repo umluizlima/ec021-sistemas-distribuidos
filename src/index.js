@@ -1,12 +1,5 @@
 var restify = require('restify');
-var mysql = require('mysql');
-
-var con = {
-  host: 'db',
-  user: 'root',
-  password: 'root',
-  database: 'ec021',
-};
+var dao = require('./dao');
 
 var server = restify.createServer({
     name: "Activity 1"
@@ -22,160 +15,121 @@ function insertToddy(req, res, next) {
     conteudo: req.body.conteudo,
     validade: req.body.validade
   };
-  var connection = mysql.createConnection(con);
-  connection.connect(function(err) {
-    if (err) throw err;
-    console.log('Connected');
-  })
-
-  const strQuery = `INSERT INTO toddy (lote, conteudo, validade)
-      VALUES ('${data.lote}', ${data.conteudo}, '${data.validade}');`;
-
-  connection.query(strQuery, function (err, rows, fields) {
-    if (err) {
-      res.json(400, err)
-    } else {
-      res.json(201, rows.insertId);
-    }
-  });
-
-  connection.end();
+  dao.inserir(data)
+  .then((result) => res.json({ id: result.insertId }))
+  .catch((error) => res.send(error));
   next();
 }
 server.post("/toddy", insertToddy);
 
 // GET All
-function listToddy(req, res, next) {
+async function listToddy(req, res, next) {
   console.log('[LISTAR]')
-  var connection = mysql.createConnection(con);
-  connection.connect(function(err) {
-    if (err) throw err;
-    console.log('Connected');
-  })
-
-  const strQuery = `SELECT * FROM toddy;`;
-
-  connection.query(strQuery, function (err, rows, fields) {
-    if (err) {
-      res.json(err)
-    } else {
-      res.json(rows);
-    }
-  });
-
-  connection.end();
+  dao.listar()
+  .then((result) => res.json(result))
+  .catch(() => res.send(500));
   next();
 }
 server.get("/toddy", listToddy);
 
 // GET One
 function getToddy(req, res, next) {
-  index = req.params.id;
   console.log('[SELECIONAR]')
-  var connection = mysql.createConnection(con);
-  connection.connect(function(err) {
-    if (err) throw err;
-    console.log('Connected');
-  })
-
-  const strQuery = `SELECT * FROM toddy WHERE id = ${index};`;
-
-  connection.query(strQuery, function (err, rows, fields) {
-    if (err) {
-      res.json(404, err)
+  dao.ler(req.params.id)
+  .then((result) => {
+    if (result.length == 0) {
+      res.send(404);
     } else {
-      res.json(200, rows);
+      res.json(result[0]);
     }
-  });
-
-  connection.end();
+  })
+  .catch(() => res.send(500));
   next();
 }
 server.get("/toddy/:id", getToddy);
 
-// GET Due
-function getDueToddy(req, res, next) {
-  console.log('[VENCIDOS]')
-  var connection = mysql.createConnection(con);
-  connection.connect(function(err) {
-    if (err) throw err;
-    console.log('Connected');
-  })
-
-  const strQuery = `SELECT * FROM toddy;`;
-
-  connection.query(strQuery, function (err, rows, fields) {
-    if (err) {
-      res.json(404, err)
-    } else {
-      res.json(200, rows.filter(toddy => new Date(toddy.validade) < new Date()));
-    }
-  });
-
-  connection.end();
-  next();
-}
-server.get("/toddy/due", getDueToddy);
-
 // UPDATE
 function updateToddy(req, res, next) {
-  index = req.params.id;
+  id = req.params.id;
   var data = {
     lote: req.body.lote,
     conteudo: req.body.conteudo,
     validade: req.body.validade
   };
   console.log('[ATUALIZAR]')
-  var connection = mysql.createConnection(con);
-  connection.connect(function(err) {
-    if (err) throw err;
-    console.log('Connected');
-  })
-
-  const strQuery = `UPDATE toddy
-    SET (
-      lote = '${data.lote}',
-      conteudo = ${data.conteudo},
-      validade = '${data.validade}'
-    ) WHERE id = ${index};`;
-
-  connection.query(strQuery, function (err, rows, fields) {
-    if (err) {
-      res.json(404, err)
+  dao.atualizar(id, data)
+  .then((result) => {
+    if (result.affectedRows == 0) {
+      res.send(404);
     } else {
-      res.json(202, rows);
+      res.send(200);
     }
-  });
-
-  connection.end();
+  })
+  .catch(() => res.send(400));
   next();
 }
 server.put("/toddy/:id", updateToddy);
 
 // DELETE
 function deleteToddy(req, res, next) {
-  index = req.params.id;
+  id = req.params.id;
   console.log('[APAGAR]')
-  var connection = mysql.createConnection(con);
-  connection.connect(function(err) {
-    if (err) throw err;
-    console.log('Connected');
-  })
-
-  const strQuery = `DELETE FROM toddy WHERE id = ${index};`;
-
-  connection.query(strQuery, function (err, rows, fields) {
-    if (err) {
-      res.json(404, err)
+  dao.apagar(id)
+  .then((result) => {
+    if (result.affectedRows == 0) {
+      res.send(404);
     } else {
-      res.json(204, rows);
+      res.send(204);
     }
-  });
-
-  connection.end();
+  })
+  .catch(() => res.send(500));
   next();
 }
 server.del("/toddy/:id", deleteToddy);
+
+// GET Due
+function getDueToddy(req, res, next) {
+  console.log('[VENCIDOS]')
+  dao.listar()
+  .then((result) => res.json(result
+    .filter(toddy => new Date(toddy.validade) < new Date()))
+  )
+  .catch(() => res.send(500));
+  next();
+}
+server.get("/toddy/due", getDueToddy);
+
+// GET lotes
+function listLot(req, res, next) {
+  console.log('[LOTES]')
+  dao.listar()
+  .then((result) => res.json(
+    Array.from(
+      new Set(result.map(toddy => toddy.lote))
+    ))
+  )
+  .catch(() => res.send(500));
+  next();
+}
+server.get("/toddy/lot", listLot);
+
+// GET toddy by lote
+function getLot(req, res, next) {
+  console.log('[LISTAR POR LOTE]')
+  lote = req.params.lot;
+  dao.listar()
+  .then((result) => {
+    const lots = result.filter(toddy => toddy.lote == lote);
+    if (lots.length == 0) {
+      res.send(404);
+    } else {
+      res.json(lots);
+    }
+  })
+  .catch(() => res.send(500));
+  next();
+}
+server.get("/toddy/lot/:lot", getLot);
 
 var port = process.env.PORT || 5000;
 
