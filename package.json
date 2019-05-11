@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "mysql": "^2.16.0",
+    "nodemon": "^1.19.0",
     "restify": "^8.0.0"
   },
   "repository": {
