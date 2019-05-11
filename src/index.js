@@ -9,7 +9,7 @@ server.use(restify.plugins.bodyParser());
 server.use(restify.plugins.queryParser());
 
 // POST
-function insertToddy(req, res, next) {
+server.post("/toddy", (req, res, next) => {
   var data = {
     lote: req.body.lote,
     conteudo: req.body.conteudo,
@@ -19,22 +19,18 @@ function insertToddy(req, res, next) {
   .then((result) => res.json({ id: result.insertId }))
   .catch((error) => res.send(error));
   next();
-}
-server.post("/toddy", insertToddy);
+});
 
 // GET All
-async function listToddy(req, res, next) {
-  console.log('[LISTAR]')
+server.get("/toddy", (req, res, next) => {
   dao.listar()
   .then((result) => res.json(result))
   .catch(() => res.send(500));
   next();
-}
-server.get("/toddy", listToddy);
+});
 
 // GET One
-function getToddy(req, res, next) {
-  console.log('[SELECIONAR]')
+server.get("/toddy/:id", (req, res, next) => {
   dao.ler(req.params.id)
   .then((result) => {
     if (result.length == 0) {
@@ -45,18 +41,16 @@ function getToddy(req, res, next) {
   })
   .catch(() => res.send(500));
   next();
-}
-server.get("/toddy/:id", getToddy);
+});
 
 // UPDATE
-function updateToddy(req, res, next) {
+server.put("/toddy/:id", (req, res, next) => {
   id = req.params.id;
   var data = {
     lote: req.body.lote,
     conteudo: req.body.conteudo,
     validade: req.body.validade
   };
-  console.log('[ATUALIZAR]')
   dao.atualizar(id, data)
   .then((result) => {
     if (result.affectedRows == 0) {
@@ -67,13 +61,11 @@ function updateToddy(req, res, next) {
   })
   .catch(() => res.send(400));
   next();
-}
-server.put("/toddy/:id", updateToddy);
+});
 
 // DELETE
-function deleteToddy(req, res, next) {
+server.del("/toddy/:id", (req, res, next) => {
   id = req.params.id;
-  console.log('[APAGAR]')
   dao.apagar(id)
   .then((result) => {
     if (result.affectedRows == 0) {
@@ -84,24 +76,20 @@ function deleteToddy(req, res, next) {
   })
   .catch(() => res.send(500));
   next();
-}
-server.del("/toddy/:id", deleteToddy);
+});
 
 // GET Due
-function getDueToddy(req, res, next) {
-  console.log('[VENCIDOS]')
+server.get("/toddy/due", (req, res, next) => {
   dao.listar()
   .then((result) => res.json(result
     .filter(toddy => new Date(toddy.validade) < new Date()))
   )
   .catch(() => res.send(500));
   next();
-}
-server.get("/toddy/due", getDueToddy);
+});
 
 // GET lotes
-function listLot(req, res, next) {
-  console.log('[LOTES]')
+server.get("/toddy/lot", (req, res, next) => {
   dao.listar()
   .then((result) => res.json(
     Array.from(
@@ -110,12 +98,10 @@ function listLot(req, res, next) {
   )
   .catch(() => res.send(500));
   next();
-}
-server.get("/toddy/lot", listLot);
+});
 
 // GET toddy by lote
-function getLot(req, res, next) {
-  console.log('[LISTAR POR LOTE]')
+server.get("/toddy/lot/:lot", (req, res, next) => {
   lote = req.params.lot;
   dao.listar()
   .then((result) => {
@@ -128,10 +114,9 @@ function getLot(req, res, next) {
   })
   .catch(() => res.send(500));
   next();
-}
-server.get("/toddy/lot/:lot", getLot);
+});
 
-var port = process.env.PORT || 5000;
+const port = 5000;
 
 server.listen(port, function() {
   console.log("%s up", server.name);
