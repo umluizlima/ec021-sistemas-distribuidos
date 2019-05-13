@@ -17,19 +17,18 @@ services:
 
   api:
     container_name: api-ec021
-    image: node
+    build:
+      context: .
+      dockerfile: api.Dockerfile
     restart: always
-    user: "node"
     ports:
       - "5000:5000"
-    working_dir: /home/node/app
     volumes:
-      - .:/home/node/app
+      - ./src:/home/node/app/src
     environment:
       DB_URI: db
       DB_NAME: ec021
       DB_USER: ec021
       DB_PASSWORD: ec021
-    command: "npm start"
     depends_on:
       - db
