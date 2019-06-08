@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+  </head>
+  <body>
+    <select id="lote">
+      <option value="">Selecione...</option>
+    </select>
+    <table id="toddys">
+      <tr>
+        <th>ID</th>
+        <th>Lote</th>
+        <th>Conteudo</th>
+        <th>Validade</th>
+      </tr>
+    </table>
+    <script type="text/javascript" src="js/jquery-3.4.1.min.js"></script>
+  </body>
+  <script type="text/javascript">
+    $(document).ready(function() {
+      // Inicializa seletor
+      $.ajax({
+        url: "http://localhost:5000/toddy/lot",
+        type: "GET",
+        beforeSend: function() {},
+        success: function(result, status, xhr) {
+          $.each(result, function(i, v) {
+            $("#lote").append(`<option value=${v}>${v}</option>`);
+          });
+        },
+        error: function() {
+          console.log("Erro ao recuperar lotes.");
+        },
+        complete: function() {},
+      });
+      // Atualiza tabela
+      $("#lote").on("change", function() {
+        if (this.value) {
+          $.ajax({
+            url: `http://localhost:5000/toddy/lot/${this.value}`,
+            type: "GET",
+            beforeSend: function() {},
+            success: function(result, status, xhr) {
+              $("#toddys").find("tr:gt(0)").remove();
+              $.each(result, function(i, v) {
+                $("#toddys").append(`
+                  <tr>
+                    <td>${v.id}</td>
+                    <td>${v.lote}</td>
+                    <td>${v.conteudo}</td>
+                    <td>${v.validade}</td>
+                  </tr>
+                `);
+              });
+            },
+            error: function() {
+              console.log(`Erro ao recuperar lote ${this.value}.`);
+            },
+            complete: function() {},
+          });
+        }
+      });
+    });
+  </script>
+</html>
