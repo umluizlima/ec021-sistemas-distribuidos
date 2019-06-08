@@ -24,7 +24,6 @@
       $.ajax({
         url: "http://localhost:5000/toddy/lot",
         type: "GET",
-        beforeSend: function() {},
         success: function(result, status, xhr) {
           $.each(result, function(i, v) {
             $("#lote").append(`<option value=${v}>${v}</option>`);
@@ -33,7 +32,6 @@
         error: function() {
           console.log("Erro ao recuperar lotes.");
         },
-        complete: function() {},
       });
       // Atualiza tabela
       $("#lote").on("change", function() {
@@ -41,9 +39,11 @@
           $.ajax({
             url: `http://localhost:5000/toddy/lot/${this.value}`,
             type: "GET",
-            beforeSend: function() {},
-            success: function(result, status, xhr) {
+            beforeSend: function() {
+              $('#lote').attr('disabled', true);
               $("#toddys").find("tr:gt(0)").remove();
+            },
+            success: function(result, status, xhr) {
               $.each(result, function(i, v) {
                 $("#toddys").append(`
                   <tr>
@@ -58,7 +58,9 @@
             error: function() {
               console.log(`Erro ao recuperar lote ${this.value}.`);
             },
-            complete: function() {},
+            complete: function() {
+              $('#lote').attr('disabled', false);
+            },
           });
         }
       });
