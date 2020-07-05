@@ -32,3 +32,14 @@ services:
       DB_PASSWORD: ec021
     depends_on:
       - db
+
+  view:
+    container_name: view-ec021
+    build:
+      context: .
+      dockerfile: view.Dockerfile
+    restart: always
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./frontend:/home/node/public
